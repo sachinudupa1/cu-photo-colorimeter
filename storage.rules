@@ -1,0 +1,11 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Photographs and model files are private. The FastAPI backend accesses
+    // them through its attached Google service account, never through a
+    // public download URL or unrestricted browser SDK permission.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

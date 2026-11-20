@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Node
+node_modules/
+**/node_modules/
+**/dist/
+
+# Secrets / local configuration
+.env
+.env.*
+!.env.example
+!.env.*.example
+.firebaserc
+serviceAccount*.json
+*-firebase-adminsdk-*.json
+
+# Experimental data and generated models (never commit private student data)
+data/photos/
+data/real/
+data/synthetic/
+models/
+results/log.csv
+results/real/
+backend/.env
+/apply_firestore_rest_patch.py
+/apply_supabase_storage_patch.py
+/fix_supabase_exists_check.py
+/backend/.firestore_rest_patch_backup/
+/backend/.supabase_patch_backup/
+/backend/.supabase_exists_fix_backup/

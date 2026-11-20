@@ -1,0 +1,13 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // All database operations go through the FastAPI service. The service
+    // verifies Firebase ID tokens and the teamMember custom claim for private
+    // endpoints. The Admin SDK uses IAM and bypasses these client rules.
+    // This intentionally prevents the public presentation site (or any other
+    // browser) from reading training_data or testing_data directly.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

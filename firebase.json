@@ -1,0 +1,39 @@
+{
+    "firestore":  {
+                      "rules":  "firestore.rules"
+                  },
+    "hosting":  [
+                    {
+                        "target":  "lab",
+                        "public":  "apps/training-console/dist",
+                        "ignore":  [
+                                       "firebase.json",
+                                       "**/.*",
+                                       "**/node_modules/**"
+                                   ],
+                        "cleanUrls":  true,
+                        "rewrites":  [
+                                         {
+                                             "source":  "**",
+                                             "destination":  "/index.html"
+                                         }
+                                     ]
+                    },
+                    {
+                        "target":  "presentation",
+                        "public":  "apps/presentation-site/dist",
+                        "ignore":  [
+                                       "firebase.json",
+                                       "**/.*",
+                                       "**/node_modules/**"
+                                   ],
+                        "cleanUrls":  true,
+                        "rewrites":  [
+                                         {
+                                             "source":  "**",
+                                             "destination":  "/index.html"
+                                         }
+                                     ]
+                    }
+                ]
+}

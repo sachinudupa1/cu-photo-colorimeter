@@ -1,0 +1,16 @@
+file,sample_id,role,conc,session,colorimeter_abs
+day1_blank_1.jpg,day1_blank,blank,0,day1,
+day1_blank_2.jpg,day1_blank,blank,0,day1,
+day1_blank_3.jpg,day1_blank,blank,0,day1,
+day1_std5_1.jpg,day1_std5,standard,5,day1,0.150
+day1_std5_2.jpg,day1_std5,standard,5,day1,0.150
+day1_std5_3.jpg,day1_std5,standard,5,day1,0.150
+day1_std10_1.jpg,day1_std10,standard,10,day1,0.300
+day1_std10_2.jpg,day1_std10,standard,10,day1,0.300
+day1_std10_3.jpg,day1_std10,standard,10,day1,0.300
+eval_blank_1.jpg,eval_blank,blank,0,eval,
+eval_blank_2.jpg,eval_blank,blank,0,eval,
+eval_blank_3.jpg,eval_blank,blank,0,eval,
+eval_test7_1.jpg,eval_test7,test,7,eval,0.210
+eval_test7_2.jpg,eval_test7,test,7,eval,0.210
+eval_test7_3.jpg,eval_test7,test,7,eval,0.210

@@ -1,0 +1,14 @@
+.gcloudignore
+.git
+.gitignore
+.venv/
+**/node_modules/
+**/dist/
+**/.env
+**/.env.local
+**/serviceAccount*.json
+**/*firebase-adminsdk*.json
+data/synthetic/
+data/photos/
+data/real/
+results/
