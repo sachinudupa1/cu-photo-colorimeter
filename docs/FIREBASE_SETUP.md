@@ -1,6 +1,6 @@
 # Firebase setup — Cu-Photo-Colorimeter
 
-This guide covers only the Firebase services used by the current no-billing architecture. The project uses **Firebase Spark** for Authentication, Cloud Firestore, and Firebase Hosting. It does **not** use Firebase Storage or Cloud Run. Photographs and model artifacts are stored in a private Supabase Storage bucket, and the Python API is planned for Render. See the root `README.md` for the full architecture and Render/Supabase deployment plan.
+This guide covers only the Firebase services used by the current no-billing architecture. The project uses **Firebase Spark** for Authentication, Cloud Firestore, and Firebase Hosting. It does **not** use Firebase Storage or Cloud Run. Photographs and model artifacts are stored in a private Supabase Storage bucket, and the Python API is deployed on Render. See the root `README.md` for the full architecture and Render/Supabase deployment plan.
 
 > **Billing note:** Do not upgrade this project to Blaze for this setup. Do not enable Cloud Run or Firebase Storage. Those services are not part of the current architecture. Firebase Spark quotas still apply; monitor usage in Firebase Console.
 
@@ -85,7 +85,7 @@ VITE_API_BASE_URL=http://127.0.0.1:8080/api
 For production builds, replace that value in both files with the actual Render API URL, for example:
 
 ```dotenv
-VITE_API_BASE_URL=https://YOUR-RENDER-SERVICE.onrender.com/api
+VITE_API_BASE_URL=https://cu-photo-api.onrender.com/api
 ```
 
 Firebase Web App configuration values are intended for browser use. They are not server passwords. Never place the Supabase Secret key or a service-account JSON file in a frontend `.env.local` file or any `VITE_` variable.
@@ -149,7 +149,7 @@ The Training Console URL is the `lab` site's `https://SITE_ID.web.app` address. 
 
 Firebase does not store photographs or model artifacts in the current architecture. The Python backend uses the private Supabase bucket `cu-photo-images` for those objects. Keep `SUPABASE_SECRET_KEY` only in the local `backend/.env` and in the Render service's private environment configuration. Never commit the key or expose it to the browser.
 
-The backend also needs Google credentials to verify Firebase ID tokens and access Firestore REST. Local development uses ADC. For the planned Render deployment, configure a dedicated least-privilege service account using Render's supported secret-file mechanism, or another supported secure workload-identity option. Do not commit the credential JSON. The root `README.md` documents the Render/Supabase deployment plan and its free-tier limitations.
+The backend also needs Google credentials to verify Firebase ID tokens and access Firestore REST. Local development uses ADC. For the deployed Render service, configure a dedicated least-privilege service account using a Render Secret File named `cu-photo-render-runtime.json`, mounted at `/etc/secrets/cu-photo-render-runtime.json`. Set `GOOGLE_APPLICATION_CREDENTIALS` to that exact path. Do not commit the credential JSON. The root `README.md` documents the Render/Supabase deployment plan and its free-tier limitations.
 
 ## G. Important operational safeguards
 

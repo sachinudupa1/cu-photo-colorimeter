@@ -62,23 +62,32 @@ Candidate models require human review. The approval workflow checks basic calibr
 
 ## Current implementation status
 
-Implemented and exercised locally:
+**Initial production deployment: live.** The following hosted components are available:
 
-- React/Vite Training Console and Presentation Site.
-- FastAPI backend and Firebase Authentication custom-claim protection for team routes.
-- Firestore REST adapter (used instead of the gRPC Firestore client in this environment).
-- Supabase Storage adapter for private photographs and model artifacts.
-- Synthetic image-processing, calibration, agent, and resolution tests.
-- Local end-to-end API checks and live read/write/delete checks against Firestore and Supabase.
+| Component | URL | Current verification |
+|---|---|---|
+| Training Console | https://cu-photo-lab.web.app | Sign-in and dashboard load on desktop and phone; dashboard currently shows zero records because no laboratory dataset has been collected. |
+| Presentation Site | https://cu-photo-colorimeter.web.app | Page sections, navigation, images, and mobile layout checked. The live demo correctly reports that no model has been approved. |
+| FastAPI backend | https://cu-photo-api.onrender.com | Render deployment is live; `/health` returns the service health response. |
 
-Not yet complete:
+Implemented and exercised:
+- React/Vite Training Console and Presentation Site, deployed to Firebase Hosting.
+- FastAPI backend deployed as a Docker web service on Render.
+- Firebase Authentication and `teamMember: true` custom-claim protection for private team routes.
+- Firestore REST adapter and live Firestore read/write/delete checks.
+- Supabase Storage adapter, private bucket configuration, and live upload/download/delete checks.
+- Backend automated tests: 19/19 passed after the Firestore REST and Supabase missing-object fixes.
+- Broader available test suite: 45/45 passed with `tests/test_compare_methods.py` excluded because Windows Application Control blocked its native dependency during this run.
+- Both frontend production builds passed.
+- On a phone, the Training Console opens the rear-camera capture interface; the Presentation Site's mobile layout was also checked.
 
-- Collection of real laboratory photographs and independently prepared standards.
-- Training and scientific validation using real samples.
-- Public Render deployment and production Firebase Hosting deployment.
-- Real-device camera testing on the final hosted URLs.
+Still pending:
+- A real photograph uploaded through the hosted Training Console and verified end-to-end in Supabase Storage and Firestore.
+- Collection of real laboratory photographs and independently prepared copper standards.
+- Training and scientific validation using real samples, including independent validation and blind-test data.
+- Approval of a scientifically validated model for public predictions.
 
-Do not describe the project as scientifically validated until the real-lab validation work has been completed and documented.
+The phone camera interface opening does not by itself verify photo upload or scientific measurement accuracy. Synthetic outputs under `results/synthetic/` demonstrate software workflow only; they are not experimental evidence. Do not claim real-world accuracy, LOD, LOQ, or MDD until the required laboratory validation has been completed and documented.
 
 ## Technology stack
 
@@ -87,7 +96,7 @@ Do not describe the project as scientifically validated until the real-lab valid
 - **Image processing and modelling:** NumPy, pandas, SciPy, scikit-learn, Pillow, Matplotlib.
 - **Identity and database:** Firebase Authentication, Cloud Firestore (Firestore REST API).
 - **Object storage:** Supabase Storage (private bucket).
-- **Planned hosting:** Firebase Hosting for the two static websites; Render Docker web service for the Python API.
+- **Hosting:** Firebase Hosting for the two static websites; Render Docker web service for the Python API.
 
 ## Local development
 
@@ -237,28 +246,28 @@ Generate and evaluate synthetic examples:
 
 Synthetic outputs are software-development fixtures only. Do not mix them with the real experimental dataset or report them as laboratory results.
 
-## Deployment plan
+## Live deployment
 
-The intended no-billing deployment is:
+The initial production deployment is live. The project uses Firebase Spark for the two static websites and Firestore, Render for the Python API, and a private Supabase Storage bucket for photographs and model artifacts.
 
-- **Firebase Hosting (Spark):** hosts the Training Console and Presentation Site as two Hosting sites in one Firebase project, within the applicable no-cost quotas.
-- **Render Free Docker Web Service:** hosts the FastAPI backend using the root `Dockerfile`.
-- **Supabase Free project:** stores photographs and model artifacts in the private `cu-photo-images` bucket.
-- **Firebase Authentication and Firestore:** remain in the existing Firebase project.
+| Component | Provider | Production URL |
+|---|---|---|
+| Training Console (`lab`) | Firebase Hosting | https://cu-photo-lab.web.app |
+| Presentation Site (`presentation`) | Firebase Hosting | https://cu-photo-colorimeter.web.app |
+| FastAPI backend | Render | https://cu-photo-api.onrender.com |
+| Backend health check | Render | https://cu-photo-api.onrender.com/health |
 
-This deployment has not yet been completed. Validate the Render service, memory use, API behavior, and real phone uploads before relying on it for a laboratory session.
+### Render backend
 
-### Render backend configuration (planned)
+The deployed Render Web Service is named `cu-photo-api`, uses the repository-root `Dockerfile`, and is configured in the Singapore region on the Free instance type. The backend listens on Render's `PORT` environment variable.
 
-Create a Render **Web Service** from this repository and select Docker. Use the root `Dockerfile`. Render provides HTTPS and a `PORT` environment variable; the Dockerfile starts Uvicorn on that port. Configure the following environment variables in the Render dashboard (never in Git):
+The Render environment contains the Firebase project ID, Supabase URL/bucket/Secret key, allowed browser origins, upload and prediction limits, model-storage prefix, and these settings:
 
 ```text
-FIREBASE_PROJECT_ID=your-firebase-project-id
-SUPABASE_URL=https://your-project-id.supabase.co
+FIREBASE_PROJECT_ID=cu-photo-colorimeter
 SUPABASE_BUCKET_NAME=cu-photo-images
-SUPABASE_SECRET_KEY=<server-only Supabase Secret key>
-GOOGLE_APPLICATION_CREDENTIALS=/etc/secrets/firebase-service-account.json
-ALLOWED_ORIGINS=https://YOUR_LAB_SITE.web.app,https://YOUR_PRESENTATION_SITE.web.app
+GOOGLE_APPLICATION_CREDENTIALS=/etc/secrets/cu-photo-render-runtime.json
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174,https://cu-photo-lab.web.app,https://cu-photo-colorimeter.web.app
 REQUIRE_APP_CHECK=false
 MAX_UPLOAD_BYTES=3145728
 MAX_PHOTOS_PER_SAMPLE=8
@@ -266,58 +275,49 @@ MAX_PREDICTIONS_PER_MINUTE_PER_PROCESS=6
 MODEL_STORAGE_PREFIX=models
 ```
 
-Add the Google service-account JSON as a **Render Secret File** named `firebase-service-account.json`; Render exposes secret files under `/etc/secrets/`. The `GOOGLE_APPLICATION_CREDENTIALS` variable points ADC to that file. Create a dedicated least-privilege service account for this backend and grant only the required Firestore data access and Firebase Authentication read access. Keep the JSON key out of the repository and rotate/revoke it if exposed. Service-account keys are sensitive, long-lived credentials; prefer an attached workload identity when the hosting platform supports it.
+`SUPABASE_URL` and `SUPABASE_SECRET_KEY` are also required. The Secret key must remain only in Render's private environment configuration and local `backend/.env`; never commit or expose it in a frontend `VITE_` variable.
 
-The Render free service has limited resources, can spin down after inactivity, and has an ephemeral filesystem. The application therefore stores persistent photos and model files in Supabase and records in Firestore, not on the Render local disk. The free service's memory limit can constrain model training; monitor logs and memory during tests. If training exceeds the free instance's resources, train locally or use a suitably sized service rather than assuming the free tier can handle every workload.
+The Google service-account JSON is stored in Render as a Secret File named `cu-photo-render-runtime.json`, mounted at `/etc/secrets/cu-photo-render-runtime.json`. `GOOGLE_APPLICATION_CREDENTIALS` points to that mounted file. Never commit the JSON file. The Render service uses a dedicated service account with the required Firestore and Firebase Authentication permissions.
 
-After Render creates the service, set the production API base URL in **both** frontend `.env.local` files before building:
+The Render Free instance has limited CPU/memory and may spin down after inactivity. Its local filesystem is ephemeral, so persistent photographs and model artifacts belong in Supabase Storage and structured records belong in Firestore. Test real upload and model-training workloads before relying on the Free instance for a laboratory session; larger training jobs may need to run locally or on a larger compute service.
 
-```dotenv
-VITE_API_BASE_URL=https://YOUR_RENDER_SERVICE.onrender.com/api
-```
+App Check enforcement is currently disabled (`REQUIRE_APP_CHECK=false`). The public prediction endpoint is intentionally accessible without team login; private team endpoints still require a valid Firebase ID token and the `teamMember` claim. The current per-process prediction limit is a basic safeguard, not global abuse protection. Review App Check and stronger rate limiting before wider public use.
 
-Add both exact Firebase Hosting origins to Render's `ALLOWED_ORIGINS` value. The API is public for the Presentation Site's prediction endpoint; private team routes continue to require a valid Firebase ID token and the `teamMember` claim.
+### Firebase Hosting websites
 
-### Firebase Hosting configuration
+The two Firebase Hosting targets are:
 
-The repository's `firebase.json` defines two Hosting targets:
+- `lab` â†’ site ID `cu-photo-lab` â†’ `apps/training-console/dist`
+- `presentation` â†’ site ID `cu-photo-colorimeter` â†’ `apps/presentation-site/dist`
 
-- `lab` → `apps/training-console/dist`
-- `presentation` → `apps/presentation-site/dist`
+There are no Cloud Run rewrites. Each frontend calls the Render API directly using `VITE_API_BASE_URL=https://cu-photo-api.onrender.com/api`, configured in its local, Git-ignored `.env.production.local` file. The Render `ALLOWED_ORIGINS` value must include both exact Hosting origins.
 
-There are intentionally **no Cloud Run rewrites** in `firebase.json`. Each frontend calls the Render API using its production `VITE_API_BASE_URL`.
+The real Firebase project/site mapping is stored in the ignored local `.firebaserc` file. Do not commit `.firebaserc`; `.firebaserc.example` is the safe public template.
 
-Install and sign in to Firebase CLI, then configure the local project/site target mapping:
+To rebuild and redeploy the two websites after frontend changes, run these commands from the repository root after ensuring each app's `.env.production.local` contains the production API URL:
 
 ```powershell
-npm install -g firebase-tools
-firebase login
-Copy-Item .firebaserc.example .firebaserc
+Push-Location apps/training-console
+npm ci
+npm run build
+Pop-Location
+
+Push-Location apps/presentation-site
+npm ci
+npm run build
+Pop-Location
+
+firebase deploy --only hosting:lab,hosting:presentation --project cu-photo-colorimeter
 ```
 
-Edit `.firebaserc` with the real Firebase project ID and apply the Hosting site IDs:
+The Render service is connected to the GitHub repository's `main` branch. Deploy backend changes from the updated commit using Render's deploy controls (or its configured auto-deploy behavior). The Firebase Hosting sites are deployed with the Firebase CLI command above.
 
-```powershell
-firebase target:apply hosting lab YOUR_LAB_HOSTING_SITE_ID --project YOUR_FIREBASE_PROJECT_ID
-firebase target:apply hosting presentation YOUR_PRESENTATION_HOSTING_SITE_ID --project YOUR_FIREBASE_PROJECT_ID
-```
+### Current operational limitations
 
-Build both websites with the production Render API URL set in their local environment files, then deploy the rules and Hosting sites:
-
-```powershell
-firebase deploy --only firestore:rules --project YOUR_FIREBASE_PROJECT_ID
-firebase deploy --only hosting:lab,hosting:presentation --project YOUR_FIREBASE_PROJECT_ID
-```
-
-The `storage.rules` file is retained as a legacy reference only; Firebase Storage is not part of the current architecture and is not deployed by this configuration.
-
-### Free-tier limitations
-
-- Firebase Hosting and Firestore have project-level no-cost quotas. Monitor usage in Firebase Console; exceeding Spark quotas can cause service limitations until the next quota period or a plan change.
-- Render Free web services sleep after 15 minutes without inbound traffic and typically take about a minute to wake. They have limited memory and an ephemeral filesystem.
-- Supabase Free Storage has a finite project storage allowance and per-file/bucket restrictions. The current `cu-photo-images` bucket is private and limited to 3 MB per object; the backend also enforces a 3 MB photo upload limit.
-
-Check the providers' current plan limits before deployment or a public demonstration; free-tier terms and quotas can change.
+- No real laboratory dataset has been collected yet, and no scientifically validated model has been approved. The public demo therefore does not provide live concentration predictions yet.
+- The Training Console's rear-camera interface has been opened successfully on a phone, but an actual laboratory photo upload through the hosted UI and its end-to-end persistence have not yet been verified.
+- Firebase Spark, Render Free, and Supabase Free have usage/resource limits. Check the providers' current quotas and monitor usage; free-tier terms can change.
+- Render cold starts and resource limits may affect availability and long-running training operations.
 
 ## Security rules and repository hygiene
 

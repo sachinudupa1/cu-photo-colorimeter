@@ -33,3 +33,4 @@ backend/.env
 /backend/.firestore_rest_patch_backup/
 /backend/.supabase_patch_backup/
 /backend/.supabase_exists_fix_backup/
+.firebase/
